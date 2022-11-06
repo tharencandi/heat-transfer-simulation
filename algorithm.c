@@ -1,9 +1,8 @@
 /*
 ============================================================================
 Filename    : algorithm.c
-Author      : Your names go here
-SCIPER      : Your SCIPER numbers
-
+Author      : Herman Thong, Tharen Candi
+SCIPER		: 359559, 359399
 ============================================================================
 */
 #include <math.h>
