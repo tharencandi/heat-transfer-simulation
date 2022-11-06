@@ -30,7 +30,6 @@ void simulate(double *input, double *output, int threads, int length, int iterat
     double *temp;
     int n;
     omp_set_num_threads(threads);
-<<<<<<< HEAD
     //#pragma omp parallel shared(output) //create threads once. Join threads once.
     #pragma omp parallel private(n)
     {
@@ -40,15 +39,6 @@ void simulate(double *input, double *output, int threads, int length, int iterat
         for(int ii= 0; ii<= length - BLOCK_SIZE + 2; ii+= BLOCK_SIZE-2) {
             //#pragma omp for 
             for(int jj = 0; jj <= length- BLOCK_SIZE + 2; jj += BLOCK_SIZE-2) {
-=======
-    // Parallelize this!!
-    #pragma omp parallel shared(output)
-    for(int n=0; n < iterations; n++)
-    {   
-        #pragma omp for
-        for(int jj = 0; jj <= length - BLOCK_SIZE+2; jj += BLOCK_SIZE-2) {
-            for(int kk = 0; kk <= length- BLOCK_SIZE+2; kk += BLOCK_SIZE-2) {
->>>>>>> 94c31f94da29ef021de1cb6ca96fd14ef7639466
                
                 for (int i = ii+1; i < BLOCK_SIZE + ii-1 ; i ++ ) {
                     for (int j = jj+1; j < BLOCK_SIZE + jj -1; j++) {
@@ -80,6 +70,7 @@ void simulate(double *input, double *output, int threads, int length, int iterat
     
     }
 }
+}
 
 
 
@@ -89,6 +80,7 @@ void simulate_base(double *input, double *output, int threads, int length, int i
     int n;
     // Parallelize this!!
     #pragma omp parallel private(n)
+    {
     for(n=0; n < iterations; n++)
     {   
         #pragma omp for schedule(static)
@@ -113,5 +105,6 @@ void simulate_base(double *input, double *output, int threads, int length, int i
             output = temp;
 
         }
+    }
     }
 }
