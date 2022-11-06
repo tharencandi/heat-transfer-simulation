@@ -66,17 +66,18 @@ double next_rand(rand_gen gen){
 	return erand48(gen.seed);
 }	
 
-rand_gen init_rand(){
-	unsigned short * seed_array = malloc (sizeof (unsigned short) * 3);
+void init_rand(rand_gen * gen){
+	unsigned short * seed_array = malloc(64);
+	
 	seed_array[0] = 5;
 	seed_array[1] = 10;
 	seed_array[2] = omp_get_thread_num();
 
-	rand_gen gen;
-	gen.seed = seed_array;
-	gen.rand_func = next_rand;
+	
+	gen->seed = seed_array;
+	gen->rand_func = next_rand;
 
-	return gen;
+	return;
 }
 
 void free_rand(rand_gen gen){
