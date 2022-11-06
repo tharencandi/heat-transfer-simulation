@@ -13,6 +13,7 @@ SCIPER		: 359559, 359399
 #define BLOCK_SIZE 8
 void simulate(double *input, double *output, int threads, int length, int iterations)
 {
+    
 
     /*
         data is brought into cache BY THE BLOCK. therefore, its optimal to access neigbouring elements
@@ -27,15 +28,17 @@ void simulate(double *input, double *output, int threads, int length, int iterat
 
     */
     double *temp;
+    int n;
     omp_set_num_threads(threads);
-    #pragma omp parallel shared(output) //create threads once. Join threads once.
-    { 
-    for(int n=0; n < iterations; n++)
+    //#pragma omp parallel shared(output) //create threads once. Join threads once.
+    #pragma omp parallel private(n)
+    {
+    for(n=0; n < iterations; n++)
     {   
-        #pragma omp for
-        for(int jj = 0; jj <= length - BLOCK_SIZE+2; jj += BLOCK_SIZE-2) {
-            
-            for(int kk = 0; kk <= length- BLOCK_SIZE+2; kk += BLOCK_SIZE-2) {
+        #pragma omp for schedule(static)
+        for(int jj = 0; jj <= length - BLOCK_SIZE + 2; jj += BLOCK_SIZE-2) {
+            //#pragma omp for 
+            for(int kk = 0; kk <= length- BLOCK_SIZE + 2; kk += BLOCK_SIZE-2) {
                
                 for (int i = jj+1; i < BLOCK_SIZE + jj -1 ; i ++ ) {
                     for (int j = kk+1; j < BLOCK_SIZE + kk -1; j++) {
@@ -47,6 +50,7 @@ void simulate(double *input, double *output, int threads, int length, int iterat
                         OUTPUT(i,j) = (INPUT(i-1,j-1) + INPUT(i-1,j) + INPUT(i-1,j+1) +
                                     INPUT(i,j-1)   + INPUT(i,j)   + INPUT(i,j+1)   +
                                     INPUT(i+1,j-1) + INPUT(i+1,j) + INPUT(i+1,j+1) )/9;
+                        
                     }
                 }
                 // printf("count %d\n", count * sizeof(int)); = 4 elems / 16bytes 
@@ -54,14 +58,20 @@ void simulate(double *input, double *output, int threads, int length, int iterat
             }
         }
         
+        #pragma omp single
+        {
+            temp = input;
+            input = output;
+            output = temp;
 
-        temp = input;
-        input = output;
-        output = temp;
+        }
+
+      
     
     }
 }
 }
+
 
 
 void simulate_base(double *input, double *output, int threads, int length, int iterations) {
