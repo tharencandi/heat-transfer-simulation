@@ -10,7 +10,7 @@ SCIPER		: 359559, 359399
 //elements with same i but different j are close.
 #define INPUT(I,J) input[(I)*length+(J)]
 #define OUTPUT(I,J) output[(I)*length+(J)]
-#define BLOCK_SIZE 64
+#define BLOCK_SIZE 8
 void simulate(double *input, double *output, int threads, int length, int iterations)
 {
 
@@ -31,7 +31,7 @@ void simulate(double *input, double *output, int threads, int length, int iterat
     // Parallelize this!!
     for(int n=0; n < iterations; n++)
     {   
-        //#pragma omp parallel for shared(output)
+        #pragma omp parallel for shared(output)
         for(int jj = 0; jj <= length - BLOCK_SIZE+2; jj += BLOCK_SIZE-2) {
             for(int kk = 0; kk <= length- BLOCK_SIZE+2; kk += BLOCK_SIZE-2) {
                
