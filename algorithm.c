@@ -23,31 +23,34 @@ void simulate(double *input, double *output, int threads, int length, int iterat
     for(int n=0; n < iterations; n++)
     {   
         /*
-            splitting by rows reduces false sharing.if two threads share same row but different columns
-            then they could be writing to same cache block.
+                splitting by rows reduces false sharing.if two threads share same row but different columns
+                then they could be writing to same cache block.
 
-            With our array so that length is a multiple of cache block. All rows will be different cache block.
-        */
+                With our array so that length is a multiple of cache block. All rows will be different cache block.
+            */
         #pragma omp for schedule(static)
         for(int i=1; i< length-1; i++)
         {   
             // unroll loop by 2 to prevent overhead of this loop
-            for(int j=1; j<length-(length%2); j += 2)
-            {
-                if (! (((i == length/2-1) || (i == length/2))
-                    && ((j+1 == length/2-1) || (j+1 == length/2)))
-                    && j < length - 1 )
-                    OUTPUT(i,j+1) = (INPUT(i-1,j) + INPUT(i-1,j+1) + INPUT(i-1,j+2) +
-                                INPUT(i,j)   + INPUT(i,j+1)   + INPUT(i,j+2)   +
-                                INPUT(i+1,j) + INPUT(i+1,j+1) + INPUT(i+1,j+2) )/9;
-                
-                if (! (((i == length/2-1) || (i == length/2))
-                    && ((j+2 == length/2-1) || (j+2 == length/2)))
-                    && j+1 < length - 1 )
-                    OUTPUT(i,j+2) = (INPUT(i-1,j+1) + INPUT(i-1,j+2) + INPUT(i-1,j+3) +
-                                INPUT(i,j+1)   + INPUT(i,j+2)   + INPUT(i,j+3)   +
-                                INPUT(i+1,j+1) + INPUT(i+1,j+2) + INPUT(i+1,j+3) )/9;
+            for(int j=1; j<length-2; j += 2)
+            {   
+                if ( !((i == length/2-1) || (i== length/2))
+                && ((j == length/2-1) || (j == length/2)) )
+                {     
+                    OUTPUT(i,j) = (INPUT(i-1,j-1) + INPUT(i-1,j) + INPUT(i-1,j+1) +
+                                INPUT(i,j-1)   + INPUT(i,j)   + INPUT(i,j+1)   +
+                                INPUT(i+1,j-1) + INPUT(i+1,j) + INPUT(i+1,j+1) )/9;
+                }
+
+                if ( ((i == length/2-1) || (i== length/2))
+                && ((j+1 == length/2-1) || (j+1 == length/2)) )
+                continue;    
+
+                OUTPUT(i,j+1) = (INPUT(i-1,j) + INPUT(i-1,j+1) + INPUT(i-1,j+2) +
+                            INPUT(i,j)   + INPUT(i,j+1)   + INPUT(i,j+2)   +
+                            INPUT(i+1,j) + INPUT(i+1,j+1) + INPUT(i+1,j+2) )/9;
             }
+
         }
 
         #pragma omp single
@@ -61,77 +64,29 @@ void simulate(double *input, double *output, int threads, int length, int iterat
     }
 }
 
-void simulate_simd(double *input, double *output, int threads, int length, int iterations)
-{   
-    double *temp;
-    omp_set_num_threads(threads);
-    //create threads once. Join threads once.
-    // #pragma omp parallel 
-    {
-    for(int n=0; n < iterations; n++)
-    {   
-        /*
-                splitting by rows reduces false sharing.if two threads share same row but different columns
-                then they could be writing to same cache block.
 
-                With our array so that length is a multiple of cache block. All rows will be different cache block.
-            */
-        #pragma omp parallel for schedule(static)
-        for(int i=1; i< length-1; i++)
-        {   
-            // unroll loop by 2 to prevent overhead of this loop
-            for(int j=1; j<length-1; j += 1)
-            {
-                if (! (((i == length/2-1) || (i == length/2))
-                    && ((j+1 == length/2-1) || (j+1 == length/2))))
-                continue;
-
-                OUTPUT(i,j) = (INPUT(i-1,j) + INPUT(i-1,j+1) + INPUT(i-1,j+2) +
-                            INPUT(i,j)   + INPUT(i,j+1)   + INPUT(i,j+2)   +
-                            INPUT(i+1,j) + INPUT(i+1,j+1) + INPUT(i+1,j+2) );
-            }
-        }
-        #pragma omp barrier
-        //chunck by multiple of cache block size for false sharing purposes. 
-        #pragma omp for simd schedule(dynamic, 8)
-        for(int i = 1; i < length*length; i++) {
-            if(i%length == 0 || (i-1)%length == 0 || i < length || i > (length*length - length))
-                continue;
-            output[i] /=9;
-        }
-  
-        // #pragma omp single
-        {
-            temp = input;
-            input = output;
-            output = temp;
-
-        }
-    }
-    }
-}
 
 
 
 void simulate_base(double *input, double *output, int threads, int length, int iterations) {
     double *temp;
     omp_set_num_threads(threads);
-    #pragma omp parallel
+    // #pragma omp parallel 
     {
     for(int n=0; n < iterations; n++)
     {   
-        #pragma omp for
+        #pragma omp parallel for
         for(int i=1; i<length-1; i++)
         {     
             for(int j=1; j<length-1; j ++)
             {
-                    if ( ((i == length/2-1) || (i== length/2))
-                        && ((j == length/2-1) || (j == length/2)) )
-                        continue;
+                if ( ((i == length/2-1) || (i== length/2))
+                && ((j == length/2-1) || (j == length/2)) )
+                continue;
 
-                    OUTPUT(i,j) = (INPUT(i-1,j-1) + INPUT(i-1,j) + INPUT(i-1,j+1) +
-                                   INPUT(i,j-1)   + INPUT(i,j)   + INPUT(i,j+1)   +
-                                   INPUT(i+1,j-1) + INPUT(i+1,j) + INPUT(i+1,j+1) )/9;
+                OUTPUT(i,j) = (INPUT(i-1,j-1) + INPUT(i-1,j) + INPUT(i-1,j+1) +
+                                INPUT(i,j-1)   + INPUT(i,j)   + INPUT(i,j+1)   +
+                                INPUT(i+1,j-1) + INPUT(i+1,j) + INPUT(i+1,j+1) )/9;
             }
         }
 
