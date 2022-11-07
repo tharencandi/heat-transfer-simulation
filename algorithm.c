@@ -94,21 +94,11 @@ void simulate(double *input, double *output, int threads, int length, int iterat
     
     double *temp;
     int n;
-    double * block;
     omp_set_num_threads(threads);
     //create threads once. Join threads once.
-    #pragma omp parallel private(n, block)
+    #pragma omp parallel private(n)
     {   
 
-        
-        block = NULL;
-
-        // if (posix_memalign((void**)&block, BLOCK_SIZE_BYTES, BLOCK_SIZE*BLOCK_SIZE*sizeof(double)) != 0){
-        //     printf("error allocating memory. early stopping.\n");
-        //     exit(1);
-        // }
-        //block = malloc(BLOCK_SIZE*BLOCK_SIZE*sizeof(double));
-     
         for(n=0; n < iterations; n++)
         {   
             /*
@@ -134,18 +124,10 @@ void simulate(double *input, double *output, int threads, int length, int iterat
 
                 the reduction in cache misses is aprox 4.5/(2.33) = 1.9 ~= 2
             */
-            int fake  = 0;
             #pragma omp for schedule(static) 
             for(int ii= 0; ii<= length - BLOCK_SIZE + 2; ii += BLOCK_SIZE - 2) {
                 for(int jj = 0; jj <= length - BLOCK_SIZE + 2; jj += BLOCK_SIZE - 2) {
                     
-                    //enforce blocking principle by writing block to block arr which will sit in l1 and be re used
-                    // (in theory)
-                    for (int i = 0; i < BLOCK_SIZE; i ++ ) {  
-                            //BLOCK(i, j) = INPUT_O(ii+i, jj+j);
-                        fake += INPUT_O(ii+i, jj);
-                        
-                    }
                     
                     for(int i = ii+1; i < BLOCK_SIZE + ii-1 ; i ++ ) {
                         for (int j = jj+1; j < BLOCK_SIZE + jj -1; j++) {
