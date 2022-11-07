@@ -10,11 +10,8 @@ SCIPER		: 359559, 359399
 // elements with same j but different i are far apart.
 //elements with same i but different j are close.
 
-#define INPUT(I,J) new_input[(I)*length_padded+(J)]
-#define OUTPUT(I,J) new_output[(I)*length_padded+(J)]
-
-#define INPUT_O(I,J) input[(I)*length+(J)]
-#define OUTPUT_O(I,J) output[(I)*length+(J)]
+#define INPUT(I,J) input[(I)*length+(J)]
+#define OUTPUT(I,J) output[(I)*length+(J)]
 
 void simulate(double *input, double *output, int threads, int length, int iterations)
 {   
@@ -40,16 +37,16 @@ void simulate(double *input, double *output, int threads, int length, int iterat
                 if (! (((i == length/2-1) || (i == length/2))
                     && ((j+1 == length/2-1) || (j+1 == length/2)))
                     && j < length - 1 )
-                    OUTPUT_O(i,j+1) = (INPUT_O(i-1,j) + INPUT_O(i-1,j+1) + INPUT_O(i-1,j+2) +
-                                INPUT_O(i,j)   + INPUT_O(i,j+1)   + INPUT_O(i,j+2)   +
-                                INPUT_O(i+1,j) + INPUT_O(i+1,j+1) + INPUT_O(i+1,j+2) )/9;
+                    OUTPUT(i,j+1) = (INPUT(i-1,j) + INPUT(i-1,j+1) + INPUT(i-1,j+2) +
+                                INPUT(i,j)   + INPUT(i,j+1)   + INPUT(i,j+2)   +
+                                INPUT(i+1,j) + INPUT(i+1,j+1) + INPUT(i+1,j+2) )/9;
                 
                 if (! (((i == length/2-1) || (i == length/2))
                     && ((j+2 == length/2-1) || (j+2 == length/2)))
                     && j+1 < length - 1 )
-                    OUTPUT_O(i,j+2) = (INPUT_O(i-1,j+1) + INPUT_O(i-1,j+2) + INPUT_O(i-1,j+3) +
-                                INPUT_O(i,j+1)   + INPUT_O(i,j+2)   + INPUT_O(i,j+3)   +
-                                INPUT_O(i+1,j+1) + INPUT_O(i+1,j+2) + INPUT_O(i+1,j+3) )/9;
+                    OUTPUT(i,j+2) = (INPUT(i-1,j+1) + INPUT(i-1,j+2) + INPUT(i-1,j+3) +
+                                INPUT(i,j+1)   + INPUT(i,j+2)   + INPUT(i,j+3)   +
+                                INPUT(i+1,j+1) + INPUT(i+1,j+2) + INPUT(i+1,j+3) )/9;
             }
         }
 
@@ -80,9 +77,9 @@ void simulate_base(double *input, double *output, int threads, int length, int i
                         && ((j == length/2-1) || (j == length/2)) )
                         continue;
 
-                    OUTPUT_O(i,j) = (INPUT_O(i-1,j-1) + INPUT_O(i-1,j) + INPUT_O(i-1,j+1) +
-                                   INPUT_O(i,j-1)   + INPUT_O(i,j)   + INPUT_O(i,j+1)   +
-                                   INPUT_O(i+1,j-1) + INPUT_O(i+1,j) + INPUT_O(i+1,j+1) )/9;
+                    OUTPUT(i,j) = (INPUT(i-1,j-1) + INPUT(i-1,j) + INPUT(i-1,j+1) +
+                                   INPUT(i,j-1)   + INPUT(i,j)   + INPUT(i,j+1)   +
+                                   INPUT(i+1,j-1) + INPUT(i+1,j) + INPUT(i+1,j+1) )/9;
             }
         }
 
@@ -113,16 +110,16 @@ void simulate_unroll(double *input, double *output, int threads, int length, int
                 if (! (((i == length/2-1) || (i == length/2))
                     && ((j+1 == length/2-1) || (j+1 == length/2)))
                     && j < length - 1 )
-                    OUTPUT_O(i,j+1) = (INPUT_O(i-1,j) + INPUT_O(i-1,j+1) + INPUT_O(i-1,j+2) +
-                                INPUT_O(i,j)   + INPUT_O(i,j+1)   + INPUT_O(i,j+2)   +
-                                INPUT_O(i+1,j) + INPUT_O(i+1,j+1) + INPUT_O(i+1,j+2) )/9;
+                    OUTPUT(i,j+1) = (INPUT(i-1,j) + INPUT(i-1,j+1) + INPUT(i-1,j+2) +
+                                INPUT(i,j)   + INPUT(i,j+1)   + INPUT(i,j+2)   +
+                                INPUT(i+1,j) + INPUT(i+1,j+1) + INPUT(i+1,j+2) )/9;
                 
                 if (! (((i == length/2-1) || (i == length/2))
                     && ((j+2 == length/2-1) || (j+2 == length/2)))
                     && j+1 < length - 1 )
-                    OUTPUT_O(i,j+2) = (INPUT_O(i-1,j+1) + INPUT_O(i-1,j+2) + INPUT_O(i-1,j+3) +
-                                INPUT_O(i,j+1)   + INPUT_O(i,j+2)   + INPUT_O(i,j+3)   +
-                                INPUT_O(i+1,j+1) + INPUT_O(i+1,j+2) + INPUT_O(i+1,j+3) )/9;
+                    OUTPUT(i,j+2) = (INPUT(i-1,j+1) + INPUT(i-1,j+2) + INPUT(i-1,j+3) +
+                                INPUT(i,j+1)   + INPUT(i,j+2)   + INPUT(i,j+3)   +
+                                INPUT(i+1,j+1) + INPUT(i+1,j+2) + INPUT(i+1,j+3) )/9;
             }
         }
 
