@@ -56,7 +56,7 @@ int main (int argc, const char *argv[]) {
     }
     
     //Save array in filelength
-    save(output, length, argv[4]);
+    //save(output, length, argv[4]);
     
     //Free allocated memory
     free(input);
