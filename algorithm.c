@@ -103,11 +103,11 @@ void simulate(double *input, double *output, int threads, int length, int iterat
         
         block = NULL;
 
-        // if (posix_memalign((void**)&block, BLOCK_SIZE_BYTES, BLOCK_SIZE*BLOCK_SIZE*sizeof(double)) != 0){
-        //     printf("error allocating memory. early stopping.\n");
-        //     exit(1);
-        // }
-        block = malloc(BLOCK_SIZE*BLOCK_SIZE*sizeof(double));
+        if (posix_memalign((void**)&block, BLOCK_SIZE_BYTES, BLOCK_SIZE*BLOCK_SIZE*sizeof(double)) != 0){
+            printf("error allocating memory. early stopping.\n");
+            exit(1);
+        }
+        //block = malloc(BLOCK_SIZE*BLOCK_SIZE*sizeof(double));
      
         for(n=0; n < iterations; n++)
         {   
@@ -158,7 +158,7 @@ void simulate(double *input, double *output, int threads, int length, int iterat
                                         BLOCK(i,j-1)   + BLOCK(i,j)   + BLOCK(i,j+1)   +
                                         BLOCK(i+1,j-1) + BLOCK(i+1,j) + BLOCK(i+1,j+1) );
                             
-                            OUTPUT_O(i,j) = sum/9;
+                            OUTPUT_O(i+ii,j+jj) = sum/9;
                         }
                     }
                 }
