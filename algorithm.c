@@ -15,19 +15,19 @@ SCIPER		: 359559, 359399
 
 #define INPUT_O(I,J) input[(I)*length+(J)]
 #define OUTPUT_O(I,J) output[(I)*length+(J)]
+#define BLOCK(I,J) block[(I)*BLOCK_SIZE + J]
 
-#define BLOCK_SIZE 16
+
+#define BLOCK_SIZE 8
 #define BLOCK_SIZE_BYTES 64
 
 double * padd_arr(double * in_arr, int length) {
-    /*
+    
     int r = length % BLOCK_SIZE;
     if (r != 0)
         r = BLOCK_SIZE - r;
     int num_elems = length * (length +r);
-    */
-    int r = 0;
-    int num_elems = length *length;
+
 
     //double * out_arr = (double*) malloc(sizeof(double) * num_elems);
     double * out_arr = NULL;
@@ -49,7 +49,7 @@ void unpad_arr(double * in_arr, int out_length, double * out_arr) {
     int r = out_length % BLOCK_SIZE;
     if (r != 0)
         r = BLOCK_SIZE - r;
-    r = 0;
+   
     int in_length = out_length + r;
     for(int i = 0; i < out_length; i ++) {
         for(int j = 0; j < out_length; j++) {
@@ -77,29 +77,37 @@ void simulate(double *input, double *output, int threads, int length, int iterat
         can we also incorporate unrolling?
 
     */
-    double * new_input;
-    double * new_output;
-    new_input = padd_arr(input, length);
-    new_output = padd_arr(output, length);
+    // double * new_input = input;
+    // double * new_output = output;
+    //new_input = padd_arr(input, length);
+    //new_output = padd_arr(output, length);
+    // int r = length % BLOCK_SIZE;
+    // if (r != 0)
+    //     r = BLOCK_SIZE - r;
 
+    // int length_padded = length + r;
 
-    int r = length % BLOCK_SIZE;
-    if (r != 0)
-        r = BLOCK_SIZE - r;
-    r = 0;
-    int length_padded = length + r;
-
-    printf("length_padded: %d\n", length_padded);
+   
     // length_padded = length;
     // new_input = input;
     // new_output = output;
     
     double *temp;
     int n;
+    double * block;
     omp_set_num_threads(threads);
     //create threads once. Join threads once.
-    #pragma omp parallel private(n)
-    {
+    #pragma omp parallel private(n, block)
+    {   
+
+        
+        block = NULL;
+
+        if (posix_memalign((void**)&block, BLOCK_SIZE_BYTES, BLOCK_SIZE*BLOCK_SIZE*sizeof(double)) != 0){
+            printf("error allocating memory. early stopping.\n");
+            exit(1);
+        }
+     
         for(n=0; n < iterations; n++)
         {   
             /*
@@ -108,7 +116,7 @@ void simulate(double *input, double *output, int threads, int length, int iterat
 
                 With our array so that length is a multiple of cache block. All rows will be different cache block.
             */
-            #pragma omp for schedule(static) 
+           
             /*
                 (ii,jj) point to the (x,y) position of every block. blocks are 8x8, such that the columns accesses for each row
                 fit into one cache block. Blocks iterate with a step of 6. This is because the border pixels of each block
@@ -125,43 +133,62 @@ void simulate(double *input, double *output, int threads, int length, int iterat
 
                 the reduction in cache misses is aprox 4.5/(2.33) = 1.9 ~= 2
             */
-            for(int ii= 0; ii<= length - BLOCK_SIZE + 2; ii += BLOCK_SIZE-2) {
-                for(int jj = 0; jj <= length - BLOCK_SIZE + 2; jj += BLOCK_SIZE-2) {
-                
-                    for (int i = ii+1; i < BLOCK_SIZE + ii-1 ; i ++ ) {
-                        for (int j = jj+1; j < BLOCK_SIZE + jj -1; j++) {
-                        
-                            if ( ((i == length/2-1) || (i == length/2))
-                            && ((j == length/2-1) || (j == length/2)) )
-                            continue;
-                       
-                            OUTPUT(i,j) = (INPUT(i-1,j-1) + INPUT(i-1,j) + INPUT(i-1,j+1) +
-                                        INPUT(i,j-1)   + INPUT(i,j)   + INPUT(i,j+1)   +
-                                        INPUT(i+1,j-1) + INPUT(i+1,j) + INPUT(i+1,j+1) )/9;
+            #pragma omp for schedule(static) 
+            for(int ii= 0; ii<= length - BLOCK_SIZE + 2; ii += BLOCK_SIZE) {
+                for(int jj = 0; jj <= length - BLOCK_SIZE + 2; jj += BLOCK_SIZE) {
+                    
+                    //enforce blocking principle by writing block to block arr which will sit in l1 and be re used
+                    // (in theory)
+                    int bi = 0;
+                    int bj = 0;
+                    for (int i = ii; i < BLOCK_SIZE + ii ; i ++ ) {
+                        for (int j = jj; j < BLOCK_SIZE + jj; j++) {
+                            BLOCK(bi,bj) = INPUT_O(i,j);
+                            bj++;
+                        }
+                        bi ++;
+                    }
+                    
+
+                    for (int i = 1; i < BLOCK_SIZE -1 ; i ++ ) {
+                        for (int j = 1; j < BLOCK_SIZE -1; j++) {
                             
+                            if ( ((i*ii == length/2-1) || (i*ii == length/2))
+                            && ((j*jj == length/2-1) || (j*jj == length/2)) )
+                            continue;
+                            
+                            int sum = (BLOCK(i-1,j-1) + BLOCK(i-1,j) + BLOCK(i-1,j+1) +
+                                        BLOCK(i,j-1)   + BLOCK(i,j)   + BLOCK(i,j+1)   +
+                                        BLOCK(i+1,j-1) + BLOCK(i+1,j) + BLOCK(i+1,j+1) );
+                            
+                            OUTPUT_O(i,j) = sum/9;
                         }
                     }
                 }
             }
             #pragma omp single
-            {
-                // temp = input;
-                // input = output;
-                // output = temp;
-
-                temp = new_input;
-                new_input = new_output;
-                new_output = temp;
-
+            {   
+      
+                temp = input;
+                input = output;
+                output = temp;
+                // temp = new_input;
+                // new_input = new_output;
+                // new_output = temp;
             }
         }
 
     }
-    unpad_arr(new_input, length, input);
-    unpad_arr(new_output, length, output);
 
-    //free(new_output);
-    //free(new_input);
+    // for(int i = 0; i < length*length; i ++) {
+    //     printf("%f %f %d\n",input[i], output[i], i);
+    // }
+    
+    //unpad_arr(new_input, length, input);
+   //unpad_arr(new_output, length, output);
+
+    // free(new_output);
+    // free(new_input);
 }
 
 
