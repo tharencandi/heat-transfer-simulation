@@ -51,45 +51,39 @@ int perform_buckets_computation(int num_threads, int num_samples, int num_bucket
 
     // create a histogram for each thread and store ptr in tmp_hist array.
     // this prevent true sharing when writing to a bucket.
-    // to prevent false sharing, these arrays MUST BE some multiple of cacheline
+    // to prevent false sharing, these arrays MUST BE some multiple of cacheline (BLK_SIZE)
+    // the arrays must also be ALLIGNED to size of cacheline (BLK_SIZE). This means that
+    // the head of the array wil be loaded into L1 at the start of a cache block.
     
     for (int i = 0; i < num_threads; i ++) {
         size_t size = (num_buckets * sizeof(int));
         size += BLK_SIZE - (size%BLK_SIZE); // round UP to multiple of blk size.
-        //tmp_hist[i] = (int*) malloc(size);
+        
+        //allocate memory alligned to BLK_SIZE
         if (posix_memalign((void**)&tmp_hist[i],BLK_SIZE, size) != 0) {
             printf("error allocating memory. early stopping.\n");
             exit(1);
-        }
-            
-        
+        }        
     }
 
-    
     // each thread adds to their priv hist
     #pragma omp parallel shared (tmp_hist) 
-    {   //private generator padded to a cache line to prevent false sharing.
-        // paddedRand g;
-        // init_rand(&g.generator);
+    {   //no need for private generators. they are read only data structures.
         rand_gen r = init_rand();
 
         int tid = omp_get_thread_num();
 
         #pragma omp for
         for(int i = 0; i < num_samples; i++) {
-           
             int bucket = next_rand(r) * num_buckets;
-            
-            //there is currently sharing fuckery with this arr:
             tmp_hist[tid][bucket] ++;
-           
         }
-       //free_rand(g.generator);
+
        free_rand(r);
         
     }
 
-    //merge
+    //merge - paritions buckets to threads. 
     #pragma omp parallel for shared (tmp_hist, histogram)
     for(int i = 0; i < num_buckets; i ++) {
         for (int tid = 0; tid < num_threads; tid++) {
