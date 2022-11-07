@@ -23,11 +23,11 @@ void simulate(double *input, double *output, int threads, int length, int iterat
     for(int n=0; n < iterations; n++)
     {   
         /*
-                splitting by rows reduces false sharing.if two threads share same row but different columns
-                then they could be writing to same cache block.
+            splitting by rows reduces false sharing.if two threads share same row but different columns
+            then they could be writing to same cache block.
 
-                With our array so that length is a multiple of cache block. All rows will be different cache block.
-            */
+            With our array so that length is a multiple of cache block. All rows will be different cache block.
+        */
         #pragma omp for schedule(static)
         for(int i=1; i< length-1; i++)
         {   
@@ -66,7 +66,7 @@ void simulate_simd(double *input, double *output, int threads, int length, int i
     double *temp;
     omp_set_num_threads(threads);
     //create threads once. Join threads once.
-    #pragma omp parallel 
+    // #pragma omp parallel 
     {
     for(int n=0; n < iterations; n++)
     {   
@@ -76,7 +76,7 @@ void simulate_simd(double *input, double *output, int threads, int length, int i
 
                 With our array so that length is a multiple of cache block. All rows will be different cache block.
             */
-        #pragma omp for schedule(static)
+        #pragma omp parallel for schedule(static)
         for(int i=1; i< length-1; i++)
         {   
             // unroll loop by 2 to prevent overhead of this loop
@@ -100,7 +100,7 @@ void simulate_simd(double *input, double *output, int threads, int length, int i
             output[i] /=9;
         }
   
-        #pragma omp single
+        // #pragma omp single
         {
             temp = input;
             input = output;
@@ -116,11 +116,11 @@ void simulate_simd(double *input, double *output, int threads, int length, int i
 void simulate_base(double *input, double *output, int threads, int length, int iterations) {
     double *temp;
     omp_set_num_threads(threads);
-    // #pragma omp parallel 
+    #pragma omp parallel
     {
     for(int n=0; n < iterations; n++)
     {   
-        #pragma omp parallel for
+        #pragma omp for
         for(int i=1; i<length-1; i++)
         {     
             for(int j=1; j<length-1; j ++)
