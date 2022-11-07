@@ -103,10 +103,11 @@ void simulate(double *input, double *output, int threads, int length, int iterat
         
         block = NULL;
 
-        if (posix_memalign((void**)&block, BLOCK_SIZE_BYTES, BLOCK_SIZE*BLOCK_SIZE*sizeof(double)) != 0){
-            printf("error allocating memory. early stopping.\n");
-            exit(1);
-        }
+        // if (posix_memalign((void**)&block, BLOCK_SIZE_BYTES, BLOCK_SIZE*BLOCK_SIZE*sizeof(double)) != 0){
+        //     printf("error allocating memory. early stopping.\n");
+        //     exit(1);
+        // }
+        block = malloc(BLOCK_SIZE*BLOCK_SIZE*sizeof(double));
      
         for(n=0; n < iterations; n++)
         {   
@@ -134,27 +135,23 @@ void simulate(double *input, double *output, int threads, int length, int iterat
                 the reduction in cache misses is aprox 4.5/(2.33) = 1.9 ~= 2
             */
             #pragma omp for schedule(static) 
-            for(int ii= 0; ii<= length - BLOCK_SIZE + 2; ii += BLOCK_SIZE) {
-                for(int jj = 0; jj <= length - BLOCK_SIZE + 2; jj += BLOCK_SIZE) {
+            for(int ii= 0; ii<= length - BLOCK_SIZE + 2; ii += BLOCK_SIZE - 2) {
+                for(int jj = 0; jj <= length - BLOCK_SIZE + 2; jj += BLOCK_SIZE - 2) {
                     
                     //enforce blocking principle by writing block to block arr which will sit in l1 and be re used
                     // (in theory)
-                    int bi = 0;
-                    int bj = 0;
-                    for (int i = ii; i < BLOCK_SIZE + ii ; i ++ ) {
-                        for (int j = jj; j < BLOCK_SIZE + jj; j++) {
-                            BLOCK(bi,bj) = INPUT_O(i,j);
-                            bj++;
+                    for (int i = 0; i < BLOCK_SIZE; i ++ ) {
+                        for (int j = 0; j < BLOCK_SIZE; j++) {
+                            BLOCK(i, j) = INPUT_O(ii+i, jj+j);
                         }
-                        bi ++;
                     }
                     
 
                     for (int i = 1; i < BLOCK_SIZE -1 ; i ++ ) {
                         for (int j = 1; j < BLOCK_SIZE -1; j++) {
                             
-                            if ( ((i*ii == length/2-1) || (i*ii == length/2))
-                            && ((j*jj == length/2-1) || (j*jj == length/2)) )
+                            if ( ((i+ii == length/2-1) || (i+ii == length/2))
+                            && ((j+jj == length/2-1) || (j+jj == length/2)) )
                             continue;
                             
                             int sum = (BLOCK(i-1,j-1) + BLOCK(i-1,j) + BLOCK(i-1,j+1) +
