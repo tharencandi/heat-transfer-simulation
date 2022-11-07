@@ -34,8 +34,8 @@ void simulate(double *input, double *output, int threads, int length, int iterat
             // unroll loop by 2 to prevent overhead of this loop
             for(int j=1; j<length-2; j += 2)
             {   
-                if ( !((i == length/2-1) || (i== length/2))
-                && ((j == length/2-1) || (j == length/2)) )
+                if ( !(((i == length/2-1) || (i== length/2))
+                && ((j == length/2-1) || (j == length/2))) )
                 {     
                     OUTPUT(i,j) = (INPUT(i-1,j-1) + INPUT(i-1,j) + INPUT(i-1,j+1) +
                                 INPUT(i,j-1)   + INPUT(i,j)   + INPUT(i,j+1)   +
@@ -104,7 +104,7 @@ void simulate_base(double *input, double *output, int threads, int length, int i
 void simulate_unroll(double *input, double *output, int threads, int length, int iterations) {
     double *temp;
     omp_set_num_threads(threads);
-    // #pragma omp parallel 
+
     {
     for(int n=0; n < iterations; n++)
     {   
@@ -112,22 +112,25 @@ void simulate_unroll(double *input, double *output, int threads, int length, int
         for(int i=1; i< length-1; i++)
         {   
             // unroll loop by 2 to prevent overhead of this loop
-            for(int j=1; j<length-(length%2); j += 2)
-            {
-                if (! (((i == length/2-1) || (i == length/2))
-                    && ((j+1 == length/2-1) || (j+1 == length/2)))
-                    && j < length - 1 )
-                    OUTPUT(i,j+1) = (INPUT(i-1,j) + INPUT(i-1,j+1) + INPUT(i-1,j+2) +
-                                INPUT(i,j)   + INPUT(i,j+1)   + INPUT(i,j+2)   +
-                                INPUT(i+1,j) + INPUT(i+1,j+1) + INPUT(i+1,j+2) )/9;
-                
-                if (! (((i == length/2-1) || (i == length/2))
-                    && ((j+2 == length/2-1) || (j+2 == length/2)))
-                    && j+1 < length - 1 )
-                    OUTPUT(i,j+2) = (INPUT(i-1,j+1) + INPUT(i-1,j+2) + INPUT(i-1,j+3) +
-                                INPUT(i,j+1)   + INPUT(i,j+2)   + INPUT(i,j+3)   +
-                                INPUT(i+1,j+1) + INPUT(i+1,j+2) + INPUT(i+1,j+3) )/9;
+            for(int j=1; j<length-2; j += 2)
+            {   
+                if ( !(((i == length/2-1) || (i== length/2))
+                && ((j == length/2-1) || (j == length/2))) )
+                {     
+                    OUTPUT(i,j) = (INPUT(i-1,j-1) + INPUT(i-1,j) + INPUT(i-1,j+1) +
+                                INPUT(i,j-1)   + INPUT(i,j)   + INPUT(i,j+1)   +
+                                INPUT(i+1,j-1) + INPUT(i+1,j) + INPUT(i+1,j+1) )/9;
+                }
+
+                if ( ((i == length/2-1) || (i== length/2))
+                && ((j+1 == length/2-1) || (j+1 == length/2)) )
+                continue;    
+
+                OUTPUT(i,j+1) = (INPUT(i-1,j) + INPUT(i-1,j+1) + INPUT(i-1,j+2) +
+                            INPUT(i,j)   + INPUT(i,j+1)   + INPUT(i,j+2)   +
+                            INPUT(i+1,j) + INPUT(i+1,j+1) + INPUT(i+1,j+2) )/9;
             }
+
         }
 
         #pragma omp single
