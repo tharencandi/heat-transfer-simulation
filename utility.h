@@ -66,22 +66,6 @@ double next_rand(rand_gen gen){
 	return erand48(gen.seed);
 }	
 
-void init__padded_rand(rand_gen * gen){
-
-	//does not need to be padded as it is read only. 
-	unsigned short * seed_array = malloc (sizeof (unsigned short) * 3);
-	
-	seed_array[0] = 5;
-	seed_array[1] = 10;
-	seed_array[2] = omp_get_thread_num();
-
-	
-	gen->seed = seed_array;
-	gen->rand_func = next_rand;
-
-	return;
-}
-
 rand_gen init_rand(){
 	unsigned short * seed_array = malloc (sizeof (unsigned short) * 3);
 	seed_array[0] = 5;
