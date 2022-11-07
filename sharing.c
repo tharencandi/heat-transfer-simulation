@@ -43,32 +43,49 @@ typedef struct {
 int perform_buckets_computation(int num_threads, int num_samples, int num_buckets) {
     
     omp_set_num_threads(num_threads);
-    
+    // final histogram
     volatile int *histogram = (int*) calloc(num_buckets, sizeof(int));
 
+    //create list of histograms ptrs - one for each thread.
     int **tmp_hist = (int**)calloc(num_threads, sizeof(int*));
+
+    // create a histogram for each thread and store ptr in tmp_hist array.
+    // this prevent true sharing when writing to a bucket.
+    // to prevent false sharing, these arrays MUST BE some multiple of cacheline
+    
     for (int i = 0; i < num_threads; i ++) {
-        tmp_hist[i] = (int*) calloc(num_buckets, sizeof(int));
+        size_t size = (num_buckets * sizeof(int));
+        size += BLK_SIZE - (size%BLK_SIZE); // round UP to multiple of blk size.
+        //tmp_hist[i] = (int*) malloc(size);
+        if (posix_memalign((void**)&tmp_hist[i],BLK_SIZE, size) != 0) {
+            printf("error allocating memory. early stopping.\n");
+            exit(1);
+        }
+            
+        
     }
-    //int tmp_hist[num_threads][num_buckets];
+
     
     // each thread adds to their priv hist
     #pragma omp parallel shared (tmp_hist) 
-    {   
-        paddedRand g;
-        init_rand(&g.generator);
+    {   //private generator padded to a cache line to prevent false sharing.
+        // paddedRand g;
+        // init_rand(&g.generator);
+        rand_gen r = init_rand();
+
         int tid = omp_get_thread_num();
-        printf("%p gen %p with seed: %d\n", &g, &g.generator, g.generator.seed[2]);
+
         #pragma omp for
         for(int i = 0; i < num_samples; i++) {
            
-            int val = next_rand(g.generator) * num_buckets;
+            int bucket = next_rand(r) * num_buckets;
             
-            tmp_hist[tid][val] ++;
+            //there is currently sharing fuckery with this arr:
+            tmp_hist[tid][bucket] ++;
            
         }
-       free_rand(g.generator);
-       
+       //free_rand(g.generator);
+       free_rand(r);
         
     }
 
