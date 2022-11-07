@@ -141,26 +141,23 @@ void simulate(double *input, double *output, int threads, int length, int iterat
                     
                     //enforce blocking principle by writing block to block arr which will sit in l1 and be re used
                     // (in theory)
-                    for (int i = 0; i < BLOCK_SIZE; i ++ ) {
-                       
+                    for (int i = 0; i < BLOCK_SIZE; i ++ ) {  
                             //BLOCK(i, j) = INPUT_O(ii+i, jj+j);
                         fake += INPUT_O(ii+i, jj);
                         
                     }
                     
-
-                    for (int i = 1; i < BLOCK_SIZE -1 ; i ++ ) {
-                        for (int j = 1; j < BLOCK_SIZE -1; j++) {
-                            
-                            if ( ((i+ii == length/2-1) || (i+ii == length/2))
-                            && ((j+jj == length/2-1) || (j+jj == length/2)) )
+                    for(int i = ii+1; i < BLOCK_SIZE + ii-1 ; i ++ ) {
+                        for (int j = jj+1; j < BLOCK_SIZE + jj -1; j++) {
+                        
+                            if ( ((i == length/2-1) || (i == length/2))
+                            && ((j == length/2-1) || (j == length/2)) )
                             continue;
+                       
+                            OUTPUT_O(i,j) = (INPUT_O(i-1,j-1) + INPUT_O(i-1,j) + INPUT_O(i-1,j+1) +
+                                        INPUT_O(i,j-1)   + INPUT_O(i,j)   + INPUT_O(i,j+1)   +
+                                        INPUT_O(i+1,j-1) + INPUT_O(i+1,j) + INPUT_O(i+1,j+1) )/9;
                             
-                            int sum = (BLOCK(i-1,j-1) + BLOCK(i-1,j) + BLOCK(i-1,j+1) +
-                                        BLOCK(i,j-1)   + BLOCK(i,j)   + BLOCK(i,j+1)   +
-                                        BLOCK(i+1,j-1) + BLOCK(i+1,j) + BLOCK(i+1,j+1) );
-                            
-                            OUTPUT_O(i+ii,j+jj) = sum/9;
                         }
                     }
                 }
