@@ -39,7 +39,6 @@ typedef struct {
     char _padding[BLK_SIZE - RANDGENSIZE];
 } paddedRand;
 
-
 int perform_buckets_computation(int num_threads, int num_samples, int num_buckets) {
     
     omp_set_num_threads(num_threads);
@@ -99,3 +98,16 @@ int perform_buckets_computation(int num_threads, int num_samples, int num_bucket
     free((void*) tmp_hist);
     return 0;
 }
+
+// int perform_buckets_computation_naive(int num_threads, int num_samples, int num_buckets) {
+//     volatile int *histogram = (int*) calloc(num_buckets, sizeof(int));
+//     rand_gen generator = init_rand();
+//     omp_set_num_threads(num_threads);
+//     #pragma omp parallel for
+//     for(int i = 0; i < num_samples; i++){
+//         int val = next_rand(generator) * num_buckets;
+//         histogram[val]++;
+//     }
+//     free_rand(generator);
+//     return 0;
+// }
