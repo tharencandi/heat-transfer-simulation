@@ -242,7 +242,7 @@ sbatch execute.sh
 
 ## Authors
 
-* **Tharen Candi** ([@tharen](https://github.com/tharen)) — EPFL
-* **Herman Thong** — EPFL
+* **Tharen Candi**
+* **Herman Thong**
 
 *Project developed for CS-307: Introduction to Multiprocessor Architecture, Autumn 2022, EPFL.*
