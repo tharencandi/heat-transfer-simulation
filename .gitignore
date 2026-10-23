@@ -1,0 +1,23 @@
+# Compiled binaries
+heatmap
+sharing
+debug_heatmap
+assignment2
+
+# Object and library files
+*.o
+*.so
+*.a
+
+# Simulation outputs / CSV files
+*.csv
+output.csv
+
+# Python cache
+__pycache__/
+*.pyc
+
+# System / Editor files
+.DS_Store
+*.swp
+*~
